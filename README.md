@@ -73,6 +73,6 @@ swift run LyricsFloat
 
 - 合法授权的官方歌词服务
 - 或你自己的歌词服务层（带缓存和容灾）
-- [Linux.do](https://linux.do)
-感谢Linux.do社区支持
+- 感谢[Linux.do](https://linux.do)社区支持
+
 

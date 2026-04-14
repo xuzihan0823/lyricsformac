@@ -3,6 +3,8 @@ import Foundation
 struct MusicTrackSnapshot {
     let title: String
     let artist: String
+    let album: String
+    let persistentID: String
     let duration: Double
     let position: Double
     let lyrics: String
@@ -18,11 +20,16 @@ enum MusicBridge {
             set t to current track
             set _name to (get name of t)
             set _artist to (get artist of t)
+            set _album to (get album of t)
+            set _pid to ""
+            try
+                set _pid to (get persistent ID of t)
+            end try
             set _duration to (get duration of t)
             set _position to (get player position)
             set _lyrics to (get lyrics of t)
             set _state to (player state as string)
-            return _name & "|||" & _artist & "|||" & (_duration as string) & "|||" & (_position as string) & "|||" & _state & "|||" & _lyrics
+            return _name & "|||" & _artist & "|||" & _album & "|||" & _pid & "|||" & (_duration as string) & "|||" & (_position as string) & "|||" & _state & "|||" & _lyrics
         end tell
         """
 
@@ -32,17 +39,21 @@ enum MusicBridge {
         }
 
         let parts = output.components(separatedBy: "|||")
-        guard parts.count >= 6 else { return nil }
+        guard parts.count >= 8 else { return nil }
         let title = parts[0]
         let artist = parts[1]
-        let duration = Double(parts[2]) ?? 0
-        let position = Double(parts[3]) ?? 0
-        let state = parts[4].lowercased()
-        let lyrics = parts[5...].joined(separator: "|||")
+        let album = parts[2]
+        let persistentID = parts[3]
+        let duration = Double(parts[4]) ?? 0
+        let position = Double(parts[5]) ?? 0
+        let state = parts[6].lowercased()
+        let lyrics = parts[7...].joined(separator: "|||")
 
         return MusicTrackSnapshot(
             title: title,
             artist: artist,
+            album: album,
+            persistentID: persistentID,
             duration: duration,
             position: position,
             lyrics: lyrics,

@@ -5,5 +5,7 @@ Package.resolved
 Packages/
 DerivedData/
 *.xcodeproj
-xcuserdata/
 *.xcworkspace
+xcuserdata/
+.dist/
+dist/

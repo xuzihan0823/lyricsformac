@@ -43,6 +43,8 @@ final class LyricsOverlayController: ObservableObject {
     @Published var theme: OverlayTheme = .graphite
     @Published var useNeteaseProvider: Bool = false
 
+    var closeOverlayAction: (() -> Void)?
+
     private var timer: AnyCancellable?
     private var lyricsTask: Task<Void, Never>?
     private var lastTrackKey: String = ""
@@ -88,6 +90,10 @@ final class LyricsOverlayController: ObservableObject {
     func toggleNeteaseProvider() {
         useNeteaseProvider.toggle()
         lastTrackKey = ""
+    }
+
+    func closeOverlay() {
+        closeOverlayAction?()
     }
 
     private func tick() {

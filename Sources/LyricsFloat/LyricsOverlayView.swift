@@ -138,6 +138,14 @@ struct LyricsOverlayView: View {
             }
 
             ControlIconButton(
+                symbol: "xmark",
+                tooltip: "关闭悬浮窗",
+                style: style
+            ) {
+                controller.closeOverlay()
+            }
+
+            ControlIconButton(
                 symbol: controller.useNeteaseProvider ? "cloud.fill" : "cloud",
                 tooltip: "网易云时间轴",
                 style: style

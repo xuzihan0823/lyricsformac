@@ -18,6 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var providerItem: NSMenuItem?
     private var themeItem: NSMenuItem?
     private var opacityItem: NSMenuItem?
+    private var showPanelItem: NSMenuItem?
 
     @MainActor
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -45,6 +46,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.alphaValue = controller.opacity
 
         self.panel = panel
+        controller.closeOverlayAction = { [weak self] in
+            self?.hidePanel()
+        }
         bindPanelState(controller: controller, panel: panel)
         configureStatusBar()
         refreshMenuState()
@@ -129,6 +133,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.themeItem = themeItem
         menu.addItem(themeItem)
 
+        let showPanelItem = NSMenuItem(title: "显示悬浮窗", action: #selector(showPanel), keyEquivalent: "")
+        showPanelItem.target = self
+        self.showPanelItem = showPanelItem
+        menu.addItem(showPanelItem)
+
         let providerItem = NSMenuItem(title: "启用网易云歌词", action: #selector(toggleProvider), keyEquivalent: "")
         providerItem.target = self
         self.providerItem = providerItem
@@ -151,6 +160,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         providerItem?.state = controller.useNeteaseProvider ? .on : .off
         themeItem?.title = "切换主题（当前：\(controller.theme.displayName)）"
         opacityItem?.title = "切换透明度（当前：\(Int(controller.opacity * 100))%）"
+        showPanelItem?.isHidden = panel?.isVisible == true
     }
 
     @MainActor @objc private func toggleLock() {
@@ -169,11 +179,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller?.toggleTheme()
     }
 
+    @MainActor @objc private func showPanel() {
+        guard let panel else { return }
+        panel.orderFrontRegardless()
+        refreshMenuState()
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     @MainActor @objc private func toggleProvider() {
         controller?.toggleNeteaseProvider()
     }
 
     @MainActor @objc private func quitApp() {
         NSApp.terminate(nil)
+    }
+
+    @MainActor
+    private func hidePanel() {
+        panel?.orderOut(nil)
+        refreshMenuState()
     }
 }

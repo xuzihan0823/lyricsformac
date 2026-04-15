@@ -46,23 +46,34 @@ final class LyricsOverlayController: ObservableObject {
     var closeOverlayAction: (() -> Void)?
 
     private var timer: AnyCancellable?
+    private var progressTimer: AnyCancellable?
     private var lyricsTask: Task<Void, Never>?
+    private var snapshotTask: Task<Void, Never>?
     private var lastTrackKey: String = ""
     private var cache: [String: CachedLyrics] = [:]
+    private var isFetchingSnapshot = false
+    private var lastKnownPosition: Double = 0
+    private var lastPositionSampleDate = Date()
 
     init() {
-        timer = Timer.publish(every: 0.33, on: .main, in: .common)
+        timer = Timer.publish(every: 0.2, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
-                Task { @MainActor in
-                    self?.tick()
-                }
+                self?.scheduleSnapshotRefresh()
+            }
+
+        progressTimer = Timer.publish(every: 1.0 / 30.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                self?.advanceInterpolatedProgress()
             }
     }
 
     deinit {
         timer?.cancel()
+        progressTimer?.cancel()
         lyricsTask?.cancel()
+        snapshotTask?.cancel()
     }
 
     func zoom(by delta: CGFloat) {
@@ -95,14 +106,31 @@ final class LyricsOverlayController: ObservableObject {
         closeOverlayAction?()
     }
 
-    private func tick() {
-        guard let snapshot = MusicBridge.fetchSnapshot() else {
+    private func scheduleSnapshotRefresh() {
+        guard !isFetchingSnapshot else { return }
+        isFetchingSnapshot = true
+
+        snapshotTask?.cancel()
+        snapshotTask = Task { [weak self] in
+            guard let self else { return }
+            let snapshot = await MusicBridge.fetchSnapshot()
+            await MainActor.run {
+                self.isFetchingSnapshot = false
+                self.applySnapshot(snapshot)
+            }
+        }
+    }
+
+    private func applySnapshot(_ snapshot: MusicTrackSnapshot?) {
+        guard let snapshot else {
             isPlaying = false
             title = "Apple Music"
             artist = "未播放"
             lyricsSource = "等待播放"
             currentLineID = nil
             lineProgress = 0
+            lastKnownPosition = 0
+            lastPositionSampleDate = Date()
             return
         }
 
@@ -110,6 +138,8 @@ final class LyricsOverlayController: ObservableObject {
         artist = snapshot.artist
         isPlaying = snapshot.isPlaying
         lyricsSource = "网易云优先"
+        lastKnownPosition = snapshot.position
+        lastPositionSampleDate = Date()
 
         let trackKey = buildTrackKey(snapshot)
         if trackKey != lastTrackKey {
@@ -237,8 +267,18 @@ final class LyricsOverlayController: ObservableObject {
             current = lines[lines.count - 1]
         }
 
-        currentLineID = current.id
+        if currentLineID != current.id {
+            currentLineID = current.id
+        }
+
         let denominator = max(current.end - current.start, 0.05)
-        lineProgress = min(max((position - current.start) / denominator, 0), 1)
+        let targetProgress = min(max((position - current.start) / denominator, 0), 1)
+        lineProgress = targetProgress
+    }
+
+    private func advanceInterpolatedProgress() {
+        guard isPlaying, !lines.isEmpty else { return }
+        let position = lastKnownPosition + Date().timeIntervalSince(lastPositionSampleDate)
+        updateCurrentLine(position: position)
     }
 }

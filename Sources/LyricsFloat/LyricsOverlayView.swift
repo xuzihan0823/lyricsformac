@@ -3,6 +3,7 @@ import SwiftUI
 struct LyricsOverlayView: View {
     @ObservedObject var controller: LyricsOverlayController
     @State private var lastMagnification: CGFloat = 1.0
+    @State private var isHovering = false
 
     var body: some View {
         ZStack {
@@ -14,6 +15,11 @@ struct LyricsOverlayView: View {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
+        }
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.18)) {
+                isHovering = hovering
+            }
         }
         .gesture(
             MagnificationGesture()
@@ -31,21 +37,21 @@ struct LyricsOverlayView: View {
     }
 
     private var style: ThemeStyle {
-        ThemeStyle(theme: controller.theme)
+        ThemeStyle(theme: controller.theme, isHovering: isHovering)
     }
 
     private var backgroundCard: some View {
         Group {
             if controller.theme == .frosted {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.ultraThinMaterial.opacity(0.72))
+                    .fill(.ultraThinMaterial.opacity(isHovering ? 0.84 : 0.68))
                     .overlay(
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Color.white.opacity(0.12),
-                                        Color.white.opacity(0.04)
+                                        Color.white.opacity(isHovering ? 0.16 : 0.08),
+                                        Color.white.opacity(isHovering ? 0.06 : 0.02)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -54,15 +60,15 @@ struct LyricsOverlayView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.white.opacity(0.16), lineWidth: 0.8)
+                            .stroke(Color.white.opacity(isHovering ? 0.18 : 0.03), lineWidth: isHovering ? 0.9 : 0.5)
                     )
             } else {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.08, green: 0.09, blue: 0.11).opacity(0.46),
-                                Color(red: 0.14, green: 0.15, blue: 0.18).opacity(0.26)
+                                Color(red: 0.08, green: 0.09, blue: 0.11).opacity(isHovering ? 0.52 : 0.36),
+                                Color(red: 0.14, green: 0.15, blue: 0.18).opacity(isHovering ? 0.32 : 0.18)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -70,7 +76,7 @@ struct LyricsOverlayView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
+                            .stroke(Color.white.opacity(isHovering ? 0.12 : 0.02), lineWidth: isHovering ? 0.9 : 0.5)
                     )
             }
         }
@@ -177,7 +183,7 @@ struct LyricsOverlayView: View {
                 }
                 .onChange(of: controller.currentLineID) { id in
                     guard let id else { return }
-                    withAnimation(.interpolatingSpring(stiffness: 190, damping: 23)) {
+                    withAnimation(.interpolatingSpring(stiffness: 180, damping: 24)) {
                         proxy.scrollTo(id, anchor: .center)
                     }
                 }
@@ -194,22 +200,22 @@ private struct ThemeStyle {
     let chipBackground: Color
     let chipBorder: Color
 
-    init(theme: OverlayTheme) {
+    init(theme: OverlayTheme, isHovering: Bool) {
         switch theme {
         case .graphite:
-            primaryText = Color.white.opacity(0.88)
-            secondaryText = Color.white.opacity(0.60)
+            primaryText = Color.white.opacity(isHovering ? 0.92 : 0.82)
+            secondaryText = Color.white.opacity(isHovering ? 0.66 : 0.50)
             lyricDim = Color.white.opacity(0.30)
-            lyricHighlight = Color.white.opacity(0.90)
-            chipBackground = Color.white.opacity(0.05)
-            chipBorder = Color.white.opacity(0.10)
+            lyricHighlight = Color.white.opacity(0.92)
+            chipBackground = Color.white.opacity(isHovering ? 0.10 : 0.03)
+            chipBorder = Color.white.opacity(isHovering ? 0.16 : 0.04)
         case .frosted:
-            primaryText = Color.black.opacity(0.76)
-            secondaryText = Color.black.opacity(0.46)
+            primaryText = Color.black.opacity(isHovering ? 0.82 : 0.70)
+            secondaryText = Color.black.opacity(isHovering ? 0.56 : 0.40)
             lyricDim = Color.black.opacity(0.24)
-            lyricHighlight = Color.black.opacity(0.82)
-            chipBackground = Color.white.opacity(0.18)
-            chipBorder = Color.white.opacity(0.22)
+            lyricHighlight = Color.black.opacity(0.84)
+            chipBackground = Color.white.opacity(isHovering ? 0.30 : 0.10)
+            chipBorder = Color.white.opacity(isHovering ? 0.28 : 0.08)
         }
     }
 }
@@ -266,7 +272,7 @@ private struct AnimatedLyricLine: View {
                     .mask(alignment: .leading) {
                         Rectangle().frame(width: geo.size.width * progress)
                     }
-                    .animation(.linear(duration: 0.24), value: progress)
+                    .animation(.easeOut(duration: 0.08), value: progress)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

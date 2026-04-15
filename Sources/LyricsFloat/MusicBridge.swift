@@ -12,7 +12,13 @@ struct MusicTrackSnapshot {
 }
 
 enum MusicBridge {
-    static func fetchSnapshot() -> MusicTrackSnapshot? {
+    static func fetchSnapshot() async -> MusicTrackSnapshot? {
+        await Task.detached(priority: .userInitiated) {
+            fetchSnapshotSync()
+        }.value
+    }
+
+    private static func fetchSnapshotSync() -> MusicTrackSnapshot? {
         let script = """
         tell application "Music"
             if it is not running then return "NOT_RUNNING"

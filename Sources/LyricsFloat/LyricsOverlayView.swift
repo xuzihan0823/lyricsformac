@@ -38,14 +38,14 @@ struct LyricsOverlayView: View {
         Group {
             if controller.theme == .frosted {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                    .fill(.ultraThinMaterial.opacity(0.72))
                     .overlay(
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
                             .fill(
                                 LinearGradient(
                                     colors: [
-                                        Color.white.opacity(0.34),
-                                        Color.white.opacity(0.10)
+                                        Color.white.opacity(0.12),
+                                        Color.white.opacity(0.04)
                                     ],
                                     startPoint: .topLeading,
                                     endPoint: .bottomTrailing
@@ -54,15 +54,15 @@ struct LyricsOverlayView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.white.opacity(0.52), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.16), lineWidth: 0.8)
                     )
             } else {
                 RoundedRectangle(cornerRadius: 24, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [
-                                Color(red: 0.08, green: 0.09, blue: 0.11).opacity(0.92),
-                                Color(red: 0.14, green: 0.15, blue: 0.18).opacity(0.78)
+                                Color(red: 0.08, green: 0.09, blue: 0.11).opacity(0.46),
+                                Color(red: 0.14, green: 0.15, blue: 0.18).opacity(0.26)
                             ],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
@@ -70,7 +70,7 @@ struct LyricsOverlayView: View {
                     )
                     .overlay(
                         RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                            .stroke(Color.white.opacity(0.10), lineWidth: 0.8)
                     )
             }
         }
@@ -79,31 +79,41 @@ struct LyricsOverlayView: View {
     private var header: some View {
         HStack(spacing: 8) {
             Circle()
-                .fill(controller.isPlaying ? Color.green.opacity(0.92) : Color.gray.opacity(0.8))
-                .frame(width: 8, height: 8)
-
-            Text(controller.title)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
-                .foregroundStyle(style.primaryText)
-                .lineLimit(1)
-
-            Text("·")
-                .foregroundStyle(style.secondaryText)
-
-            Text(controller.artist)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundStyle(style.secondaryText)
-                .lineLimit(1)
-
-            Text("·")
-                .foregroundStyle(style.secondaryText)
+                .fill(controller.isPlaying ? Color.green.opacity(0.72) : Color.gray.opacity(0.55))
+                .frame(width: 7, height: 7)
 
             Text(controller.lyricsSource)
                 .font(.system(size: 11, weight: .medium, design: .rounded))
                 .foregroundStyle(style.secondaryText)
                 .lineLimit(1)
 
+            if controller.showTrackInfo {
+                Text("·")
+                    .foregroundStyle(style.secondaryText)
+
+                Text(controller.title)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(style.primaryText)
+                    .lineLimit(1)
+
+                Text("·")
+                    .foregroundStyle(style.secondaryText)
+
+                Text(controller.artist)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundStyle(style.secondaryText)
+                    .lineLimit(1)
+            }
+
             Spacer()
+
+            ControlIconButton(
+                symbol: controller.showTrackInfo ? "text.alignleft" : "text.alignleft",
+                tooltip: controller.showTrackInfo ? "隐藏歌曲信息" : "显示歌曲信息",
+                style: style
+            ) {
+                controller.toggleTrackInfo()
+            }
 
             ControlIconButton(
                 symbol: controller.isLocked ? "lock.fill" : "lock.open",
@@ -143,14 +153,6 @@ struct LyricsOverlayView: View {
                 style: style
             ) {
                 controller.closeOverlay()
-            }
-
-            ControlIconButton(
-                symbol: controller.useNeteaseProvider ? "cloud.fill" : "cloud",
-                tooltip: "网易云时间轴",
-                style: style
-            ) {
-                controller.toggleNeteaseProvider()
             }
         }
     }
@@ -195,19 +197,19 @@ private struct ThemeStyle {
     init(theme: OverlayTheme) {
         switch theme {
         case .graphite:
-            primaryText = Color.white.opacity(0.95)
-            secondaryText = Color.white.opacity(0.72)
-            lyricDim = Color.white.opacity(0.44)
-            lyricHighlight = Color.white.opacity(0.98)
-            chipBackground = Color.white.opacity(0.10)
-            chipBorder = Color.white.opacity(0.20)
+            primaryText = Color.white.opacity(0.88)
+            secondaryText = Color.white.opacity(0.60)
+            lyricDim = Color.white.opacity(0.30)
+            lyricHighlight = Color.white.opacity(0.90)
+            chipBackground = Color.white.opacity(0.05)
+            chipBorder = Color.white.opacity(0.10)
         case .frosted:
-            primaryText = Color.black.opacity(0.88)
-            secondaryText = Color.black.opacity(0.58)
-            lyricDim = Color.black.opacity(0.34)
-            lyricHighlight = Color.black.opacity(0.92)
-            chipBackground = Color.white.opacity(0.42)
-            chipBorder = Color.white.opacity(0.62)
+            primaryText = Color.black.opacity(0.76)
+            secondaryText = Color.black.opacity(0.46)
+            lyricDim = Color.black.opacity(0.24)
+            lyricHighlight = Color.black.opacity(0.82)
+            chipBackground = Color.white.opacity(0.18)
+            chipBorder = Color.white.opacity(0.22)
         }
     }
 }
@@ -221,7 +223,7 @@ private struct ControlIconButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 11, weight: .semibold))
+                .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(style.primaryText)
                 .frame(width: 22, height: 22)
                 .background(
@@ -230,7 +232,7 @@ private struct ControlIconButton: View {
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 7, style: .continuous)
-                        .stroke(style.chipBorder, lineWidth: 1)
+                        .stroke(style.chipBorder, lineWidth: 0.8)
                 )
         }
         .buttonStyle(.plain)

@@ -39,9 +39,9 @@ final class LyricsOverlayController: ObservableObject {
     @Published var lyricsSource: String = "Apple Music"
     @Published var isLocked: Bool = false
     @Published var isClickThrough: Bool = false
-    @Published var opacity: Double = 0.92
-    @Published var theme: OverlayTheme = .graphite
-    @Published var useNeteaseProvider: Bool = false
+    @Published var opacity: Double = 0.78
+    @Published var theme: OverlayTheme = .frosted
+    @Published var showTrackInfo: Bool = false
 
     var closeOverlayAction: (() -> Void)?
 
@@ -87,9 +87,8 @@ final class LyricsOverlayController: ObservableObject {
         theme = (theme == .graphite) ? .frosted : .graphite
     }
 
-    func toggleNeteaseProvider() {
-        useNeteaseProvider.toggle()
-        lastTrackKey = ""
+    func toggleTrackInfo() {
+        showTrackInfo.toggle()
     }
 
     func closeOverlay() {
@@ -110,6 +109,7 @@ final class LyricsOverlayController: ObservableObject {
         title = snapshot.title
         artist = snapshot.artist
         isPlaying = snapshot.isPlaying
+        lyricsSource = "网易云优先"
 
         let trackKey = buildTrackKey(snapshot)
         if trackKey != lastTrackKey {
@@ -126,16 +126,21 @@ final class LyricsOverlayController: ObservableObject {
         if let cached = cache[trackKey] {
             lines = cached.lines
             lyricsSource = cached.source
-            if cached.timed {
-                return
-            }
-        } else {
-            applyFallbackLyrics(snapshot: snapshot, trackKey: trackKey)
+            return
         }
 
-        let shouldUseNetease = useNeteaseProvider
+        lines = [LyricLine(text: "正在获取歌词…", start: 0, end: max(5, snapshot.duration))]
+        lyricsSource = "网易云优先"
+
         lyricsTask = Task { [weak self] in
             guard let self else { return }
+
+            if let remoteRaw = await NeteaseLyricProvider.fetchLyrics(title: snapshot.title, artist: snapshot.artist),
+               let remoteTimed = LRCParser.parse(raw: remoteRaw, duration: snapshot.duration),
+               !remoteTimed.isEmpty {
+                self.applyExternalLyrics(remoteTimed, source: "网易云 API", trackKey: trackKey)
+                return
+            }
 
             if let localRaw = LocalLRCProvider.loadLyrics(
                 title: snapshot.title,
@@ -149,13 +154,7 @@ final class LyricsOverlayController: ObservableObject {
                 return
             }
 
-            guard shouldUseNetease else { return }
-            guard let remoteRaw = await NeteaseLyricProvider.fetchLyrics(title: snapshot.title, artist: snapshot.artist),
-                  let remoteTimed = LRCParser.parse(raw: remoteRaw, duration: snapshot.duration),
-                  !remoteTimed.isEmpty else {
-                return
-            }
-            self.applyExternalLyrics(remoteTimed, source: "网易云 API", trackKey: trackKey)
+            self.applyFallbackLyrics(snapshot: snapshot, trackKey: trackKey)
         }
     }
 

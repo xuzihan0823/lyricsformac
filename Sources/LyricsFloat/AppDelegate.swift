@@ -15,7 +15,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var lockItem: NSMenuItem?
     private var clickThroughItem: NSMenuItem?
-    private var providerItem: NSMenuItem?
     private var themeItem: NSMenuItem?
     private var opacityItem: NSMenuItem?
     private var showPanelItem: NSMenuItem?
@@ -97,7 +96,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
             .store(in: &bag)
 
-        controller.$useNeteaseProvider
+        controller.$showTrackInfo
             .removeDuplicates()
             .sink { [weak self] _ in
                 self?.refreshMenuState()
@@ -138,11 +137,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.showPanelItem = showPanelItem
         menu.addItem(showPanelItem)
 
-        let providerItem = NSMenuItem(title: "启用网易云歌词", action: #selector(toggleProvider), keyEquivalent: "")
-        providerItem.target = self
-        self.providerItem = providerItem
-        menu.addItem(providerItem)
-
         menu.addItem(.separator())
         let quit = NSMenuItem(title: "退出 LyricsFloat", action: #selector(quitApp), keyEquivalent: "q")
         quit.target = self
@@ -157,7 +151,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard let controller else { return }
         lockItem?.state = controller.isLocked ? .on : .off
         clickThroughItem?.state = controller.isClickThrough ? .on : .off
-        providerItem?.state = controller.useNeteaseProvider ? .on : .off
         themeItem?.title = "切换主题（当前：\(controller.theme.displayName)）"
         opacityItem?.title = "切换透明度（当前：\(Int(controller.opacity * 100))%）"
         showPanelItem?.isHidden = panel?.isVisible == true
@@ -184,10 +177,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.orderFrontRegardless()
         refreshMenuState()
         NSApp.activate(ignoringOtherApps: true)
-    }
-
-    @MainActor @objc private func toggleProvider() {
-        controller?.toggleNeteaseProvider()
     }
 
     @MainActor @objc private func quitApp() {
